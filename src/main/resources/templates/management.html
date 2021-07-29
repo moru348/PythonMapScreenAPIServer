@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Screenマネジメント</title>
+</head>
+<body id="body" style="display: none">
+<button id="logout" onclick="logout()">ログアウト</button>
+<div style="text-align: center">
+  <div style="text-align: center;display: inline-block;max-width: 800px;" id="main">
+    <h1>Screenマネジメント</h1>
+    <div style="border: black solid;display: inline-block;padding: 0 100px">
+      <h2 style="text-align: center; color: brown">新しく映像を追加</h2>
+      <form style="margin: 20px;text-align: center" id="addMovie" enctype="multipart/form-data" method="post">
+        <label style="display: inline-block">
+          ID<br/>
+          <input style="margin-left: 10px" type="text" name="id" placeholder="opening" id="id" autocomplete="off" required>
+        </label>
+        <br>
+        <label style="display: inline-block">
+          <p style="text-align: left;margin-bottom: 0;margin-left: 10px">動画サイズ(ブロックサイズ)</p>
+          <input style="margin-left: 10px;width: 60px" type="number" name="x" placeholder="16" id="x" autocomplete="off" required>x<input style="width: 60px" type="number" name="y" placeholder="9" id="y" autocomplete="off" required>
+        </label>
+        <br>
+        <label style="display: inline-block">
+          最初に実行するコマンド<br/>
+          <input style="margin-left: 10px" type="text" name="command" placeholder="say こんにちは！コンソールだよ！" id="command" autocomplete="off" required>
+        </label>
+        <br>
+        <label style="display: inline-block;margin-top: 30px">
+          アップロードするmp4ファイルを選択してください。<br/>
+          <input style="margin-left: 10px" type="file" name="file" id="file" accept="video/mp4" autocomplete="off" required>
+        </label>
+        <br>
+        <button style="margin-top: 30px" type="button" id="button_1">送信</button>
+      </form>
+    </div>
+    <br>
+    <div style="border: black solid;display: inline-block;padding: 0 100px;margin-top: 90px">
+      <h2 style="text-align: center; color: forestgreen">映像を管理</h2>
+      <h5>サーバー一覧</h5>
+      <form style="margin: 20px;text-align: center" id="manager">
+        <button id="button_2" type="button">次へ</button>
+      </form>
+    </div>
+    <p>
+      私たちはユーザー様のプライバシーを遵守しています。<br>また、このサイトで入力した情報は暗号化されず、最悪の場合第三者に情報を盗まれます。
+    </p>
+
+    <p>Copyright &copy; 2005-2006 moru3_48</p>
+  </div>
+  <br>
+</div>
+<script>
+  const token = localStorage.getItem("token")
+  var allowDeleteAuth = true
+  var allowSendAdd = true
+  if(token==null||token==="") {
+    document.getElementById("main").innerText = ""
+    const h1 = document.createElement("h1")
+    h1.textContent = "Screenマネジメント(Tokenなし)"
+    const div = document.createElement("div")
+    div.style.border = "black solid"
+    div.style.display = "inline-block"
+    div.style.padding = "0 100px"
+
+    const title = document.createElement("h1")
+    title.textContent = "ログイン"
+    title.style.color = "red"
+    div.insertAdjacentElement("afterbegin", title)
+
+    const form = document.createElement("form")
+    const label = document.createElement("label")
+    label.style.display = "inline-block"
+    label.innerHTML = "認証Token<br/>"
+    const input = document.createElement("input")
+    input.style.marginLeft = "10px"
+    input.type = "text"
+    input.name = "Token"
+    input.placeholder = "token"
+    input.id = "token"
+    input.required = true
+    input.autocomplete = "off"
+    const bearer = 'Bearer ' + input.value
+
+    const button = document.createElement("button")
+    button.style.margin = "30px 0"
+    button.textContent = "送信"
+    button.type = "button"
+
+    const checkbox = document.createElement("input")
+    checkbox.type = "checkbox"
+    checkbox.name = "save"
+    checkbox.id = "save"
+    checkbox.style.marginTop = "30px"
+    const checkboxLabel = document.createElement("label")
+    checkboxLabel.htmlFor = "save"
+    checkboxLabel.textContent = "認証情報をブラウザに保存する"
+
+    button.onclick = (_) => {
+      if(input.value.length<1) { alert("Tokenを入力してください。");return }
+      fetch("https://server1.moru3.dev:2096/api/rest/rts/screen/check/", {
+        method: "GET",
+        mode:'same-origin',
+        headers: {
+          "Authorization": bearer + input.value,
+        },
+        credentials: "same-origin",
+        cache: "no-cache"
+      }).then(response => response.json())
+              .then(data => {
+                switch (data.code) {
+                  case 200:
+                    localStorage.setItem("token", input.value)
+                    localStorage.setItem("save_auth_info", checkbox.checked.toString())
+                    allowDeleteAuth = false
+                    window.location.reload()
+                    break;
+                  default:
+                    alert("Tokenが正しくありません。")
+                    break;
+                }
+              })
+              .catch(()=>{
+                alert("Tokenが正しくありません。")
+                input.value = ""
+              })
+    }
+
+    label.insertAdjacentElement("beforeend", input)
+    form.insertAdjacentElement("beforeend", label)
+    form.insertAdjacentElement("beforeend", document.createElement("br"))
+    form.insertAdjacentElement("beforeend", checkbox)
+    form.insertAdjacentElement("beforeend", checkboxLabel)
+    form.insertAdjacentElement("beforeend", document.createElement("br"))
+    form.insertAdjacentElement("beforeend", button)
+
+    div.insertAdjacentElement("beforeend", form)
+
+    document.getElementById("main").insertAdjacentElement("beforebegin", h1)
+    document.getElementById("main").insertAdjacentElement("beforebegin", div)
+
+    document.getElementById("logout").hidden = true
+  } else {
+    const bearer = 'Bearer ' + localStorage.getItem("token")
+    fetch("https://server1.moru3.dev:2096/api/rest/rts/screen/check/", {
+      method: "GET",
+      mode:'same-origin',
+      headers: {
+        "Authorization": bearer,
+      },
+      credentials: "same-origin",
+      cache: "no-cache"
+    }).then(response => response.json())
+            .then(data => {
+              switch (data.code) {
+                case 200:
+                  break;
+                default:
+                  logout()
+                  break;
+              }
+            })
+            .catch(()=>{logout()})
+    fetch("https://server1.moru3.dev:2096/api/rest/rts/screen/screens/", {
+      method: "GET",
+      mode:'same-origin',
+      headers: {
+        "Authorization": bearer,
+      },
+      credentials: "same-origin",
+      cache: "no-cache"
+    }).then(response => response.json())
+            .then(data => {
+              console.log(data)
+              switch (data.code) {
+                case 200:
+                  const list = data.list;
+                  console.log(list.length)
+                  if(list.length<=0) {
+                    const manager = document.getElementById("manager");
+                    const p = document.createElement("p");
+                    p.textContent = "どうやら設置済みのスクリーンがないようですよ。。"
+                    manager.insertAdjacentElement("beforebegin", p)
+                    document.getElementById("button_2").remove()
+                  } else {
+                    list.forEach(value => {
+                      const manager = document.getElementById("manager");
+                      const button = document.createElement("input");
+                      button.textContent = value
+                      button.name = "screen"
+                      manager.insertAdjacentElement("beforebegin", button)
+                    })
+                  }
+                  break;
+                default:
+                  const manager = document.getElementById("manager");
+                  const p = document.createElement("p");
+                  p.textContent = "サーバーの取得中にエラーが発生しました。"
+                  manager.insertAdjacentElement("beforebegin", p)
+                  document.getElementById("button_2").remove()
+                  break;
+              }
+            })
+            .catch(()=>{logout()})
+
+    const button_1 = document.getElementById("button_1")
+    button_1.onclick = (_)=>{
+      button_1.style.display = "none"
+      if(!allowSendAdd) { return }
+      allowDeleteAuth = false
+      const form = document.getElementById("addMovie")
+      let data = new FormData(form)
+      const bearer = 'Bearer ' + localStorage.getItem("token")
+      fetch("https://server1.moru3.dev:2096/api/rest/rts/screen/add/", {
+        method: "POST",
+        mode:'same-origin',
+        headers: {
+          "Authorization": bearer,
+        },
+        credentials: "same-origin",
+        cache: "no-cache",
+        body: data
+      }).then(response=>response.json())
+              .then(json=>{
+                console.log(json)
+                const msg = document.createElement("p");
+                switch (json.code) {
+                  case 200:
+                    msg.textContent = "正常にアップロードが終了しました。エンコード中、別の動画をアップロードすることはできません。"
+                    break;
+                  default:
+                    msg.textContent = "エンコード中にエラーが発生しました: " + json.message
+                }
+                button_1.insertAdjacentElement("beforebegin", msg);
+                window.setTimeout(()=>{msg.remove()}, 5000)
+              })
+              .catch(error=>{
+                const reason = document.createElement("p");
+                reason.textContent = "エラーが発生しました: " + error
+                button_1.insertAdjacentElement("beforebegin", reason);
+                window.setTimeout(()=>{reason.remove()}, 5000)
+              })
+              .finally(()=>{
+                allowSendAdd = true;
+                button_1.style.display = "inline-block"
+              })
+    }
+  }
+  document.getElementById("body").style.display = "block"
+
+  function logout() {
+    localStorage.removeItem("token")
+    window.location.reload()
+  }
+
+  window.onbeforeunload = function() {
+    if(allowDeleteAuth&&localStorage.getItem("save_auth_info")!=="true") {localStorage.removeItem("token")}
+  }
+</script>
+<noscript>
+  <style>
+    div { display: none }
+  </style>
+  <h1 style="text-align: center">JavaScriptを有効にしてください。<a href="https://chrome.google.com/">Chrome</a>とか使ってみるのもいいかもね！</h1>
+</noscript>
+</body>
+</html>
