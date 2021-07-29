@@ -1,8 +1,0 @@
-{
-  "properties": [
-    {
-      "name": "devtools.livereload.enabled",
-      "type": "java.lang.String",
-      "description": "Description for devtools.livereload.enabled."
-  }
-] }
